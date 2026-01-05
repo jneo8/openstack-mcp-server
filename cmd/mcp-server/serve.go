@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -100,13 +101,24 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 
 	// Run the application (blocking)
-	if err := application.Run(ctx); err != nil {
-		return fmt.Errorf("running application: %w", err)
+	runErr := application.Run(ctx)
+
+	// Always attempt graceful shutdown, even if Run returned an error
+	// Create a new context with timeout for shutdown
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := application.Shutdown(shutdownCtx); err != nil {
+		log.Error().Err(err).Msg("Error during shutdown")
+		if runErr != nil {
+			return fmt.Errorf("running application: %w (shutdown also failed: %v)", runErr, err)
+		}
+		return fmt.Errorf("shutting down application: %w", err)
 	}
 
-	// Graceful shutdown
-	if err := application.Shutdown(ctx); err != nil {
-		return fmt.Errorf("shutting down application: %w", err)
+	// If runErr is context.Canceled, it's a normal shutdown
+	if runErr != nil && runErr != context.Canceled {
+		return fmt.Errorf("running application: %w", runErr)
 	}
 
 	log.Info().Msg("Server stopped gracefully")

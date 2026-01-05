@@ -90,8 +90,15 @@ func (s *Server) Start(ctx context.Context) error {
 func (s *Server) Shutdown(ctx context.Context) error {
 	log.Info().Msg("Shutting down MCP server")
 
-	// For HTTP transport, the server will stop when context is cancelled
-	// The SDK handles shutdown internally
+	// For HTTP transport, explicitly shut down the HTTP server
+	if s.httpServer != nil {
+		log.Info().Msg("Shutting down HTTP server")
+		if err := s.httpServer.Shutdown(ctx); err != nil {
+			log.Error().Err(err).Msg("Error shutting down HTTP server")
+			return err
+		}
+		log.Info().Msg("HTTP server shutdown complete")
+	}
 
 	log.Info().Msg("MCP server shutdown complete")
 	return nil
@@ -121,12 +128,23 @@ func (s *Server) startHTTP(ctx context.Context) error {
 	// Build address
 	addr := fmt.Sprintf("%s:%d", s.config.Transport.Host, s.config.Transport.Port)
 
-	// Start HTTP server (blocking)
-	log.Info().Str("address", addr).Msg("HTTP server listening")
-	if err := s.httpServer.Start(addr); err != nil {
-		log.Error().Err(err).Msg("HTTP server error")
+	// Start HTTP server in goroutine
+	errChan := make(chan error, 1)
+	go func() {
+		log.Info().Str("address", addr).Msg("HTTP server listening")
+		if err := s.httpServer.Start(addr); err != nil {
+			log.Error().Err(err).Msg("HTTP server error")
+			errChan <- err
+		}
+	}()
+
+	// Wait for either context cancellation or server error
+	select {
+	case <-ctx.Done():
+		log.Info().Msg("Context cancelled, shutting down HTTP server")
+		// The SDK's server will handle shutdown internally when context is done
+		return ctx.Err()
+	case err := <-errChan:
 		return err
 	}
-
-	return nil
 }
