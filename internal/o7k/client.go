@@ -2,7 +2,9 @@ package o7k
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"net/http"
 
 	"github.com/gophercloud/gophercloud/v2"
 	"github.com/gophercloud/gophercloud/v2/openstack"
@@ -39,18 +41,40 @@ func NewClient(cfg *config.OpenStackConfig) (*Client, error) {
 		Str("username", cfg.Username).
 		Str("project_name", cfg.ProjectName).
 		Str("region", cfg.Region).
+		Bool("verify_ssl", cfg.VerifySSL).
 		Msg("Authenticating with OpenStack")
 
-	// Authenticate and get provider client
+	// Configure HTTP client with TLS settings
+	httpClient := http.Client{
+		Timeout: cfg.Timeout,
+	}
+
+	// Disable SSL verification if configured (for development/self-signed certs)
+	if !cfg.VerifySSL {
+		log.Warn().Msg("SSL verification disabled - not recommended for production")
+		httpClient.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		}
+	}
+
+	// Create provider client with custom HTTP client
 	ctx := context.Background()
-	provider, err := openstack.AuthenticatedClient(ctx, authOpts)
+	provider, err := openstack.NewClient(authOpts.IdentityEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create provider client: %w", err)
+	}
+
+	// Set HTTP client and configure provider
+	provider.HTTPClient = httpClient
+	provider.MaxBackoffRetries = uint(cfg.MaxRetries)
+
+	// Authenticate
+	err = openstack.Authenticate(ctx, provider, authOpts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to authenticate: %w", err)
 	}
-
-	// Set HTTP client options
-	provider.HTTPClient.Timeout = cfg.Timeout
-	provider.MaxBackoffRetries = uint(cfg.MaxRetries)
 
 	log.Info().Msg("Successfully authenticated with OpenStack")
 
