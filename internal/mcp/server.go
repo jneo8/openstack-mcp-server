@@ -59,7 +59,7 @@ func NewServer(cfg *config.MCPConfig, osClient *o7k.Client) (*Server, error) {
 	}
 
 	// For HTTP transport, create the HTTP server
-	if cfg.Transport.Type == "http-streaming" {
+	if cfg.Transport.Type == "http" {
 		s.httpServer = server.NewStreamableHTTPServer(mcpServer)
 	}
 
@@ -79,7 +79,7 @@ func (s *Server) Start(ctx context.Context) error {
 	switch s.config.Transport.Type {
 	case "stdio":
 		return s.startStdio(ctx)
-	case "http-streaming":
+	case "http":
 		return s.startHTTP(ctx)
 	default:
 		return fmt.Errorf("unsupported transport type: %s", s.config.Transport.Type)

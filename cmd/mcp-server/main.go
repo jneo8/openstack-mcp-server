@@ -79,23 +79,48 @@ func initConfig() error {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 	viper.AutomaticEnv()
 
-	// Manually bind OpenStack environment variables (OS_ prefix is standard)
-	envBindings := map[string]string{
-		"openstack.auth_url":            "OS_AUTH_URL",
-		"openstack.username":            "OS_USERNAME",
-		"openstack.password":            "OS_PASSWORD",
-		"openstack.project_name":        "OS_PROJECT_NAME",
-		"openstack.project_id":          "OS_PROJECT_ID",
-		"openstack.project_domain_name": "OS_PROJECT_DOMAIN_NAME",
-		"openstack.user_domain_name":    "OS_USER_DOMAIN_NAME",
-		"openstack.region":              "OS_REGION_NAME",
-		"openstack.endpoint_type":       "OS_ENDPOINT_TYPE",
-		"openstack.ca_cert_file":        "OS_CACERT",
+	// Manually bind OpenStack environment variables
+	// Supports both standard OS_* and OSMCP_OS_* prefixes
+	envBindings := map[string][]string{
+		"openstack.auth_url":            {"OS_AUTH_URL", "OSMCP_OS_AUTH_URL"},
+		"openstack.username":            {"OS_USERNAME", "OSMCP_OS_USERNAME"},
+		"openstack.password":            {"OS_PASSWORD", "OSMCP_OS_PASSWORD"},
+		"openstack.project_name":        {"OS_PROJECT_NAME", "OSMCP_OS_PROJECT_NAME"},
+		"openstack.project_id":          {"OS_PROJECT_ID", "OSMCP_OS_PROJECT_ID"},
+		"openstack.project_domain_name": {"OS_PROJECT_DOMAIN_NAME", "OSMCP_OS_PROJECT_DOMAIN_NAME"},
+		"openstack.user_domain_name":    {"OS_USER_DOMAIN_NAME", "OSMCP_OS_USER_DOMAIN_NAME"},
+		"openstack.region":              {"OS_REGION_NAME", "OSMCP_OS_REGION_NAME"},
+		"openstack.endpoint_type":       {"OS_ENDPOINT_TYPE", "OSMCP_OS_ENDPOINT_TYPE"},
+		"openstack.ca_cert_file":        {"OS_CACERT", "OSMCP_OS_CACERT"},
+		"openstack.verify_ssl":          {"OSMCP_OS_VERIFY_SSL"},
+		"openstack.timeout":             {"OSMCP_OS_TIMEOUT"},
+		"openstack.max_retries":         {"OSMCP_OS_MAX_RETRIES"},
 	}
-	for key, env := range envBindings {
+	for key, envVars := range envBindings {
+		// viper.BindEnv takes key as first arg, then env var names
+		args := append([]string{key}, envVars...)
+		if err := viper.BindEnv(args...); err != nil {
+			return fmt.Errorf("binding env %s: %w", key, err)
+		}
+	}
+
+	// Bind MCP settings with OSMCP_ prefix (without _MCP_ in the middle)
+	mcpBindings := map[string]string{
+		"mcp.read_only":         "OSMCP_READONLY",
+		"mcp.transport.type":    "OSMCP_TRANSPORT_TYPE",
+		"mcp.transport.host":    "OSMCP_TRANSPORT_HOST",
+		"mcp.transport.port":    "OSMCP_TRANSPORT_PORT",
+		"mcp.transport.timeout": "OSMCP_TRANSPORT_TIMEOUT",
+	}
+	for key, env := range mcpBindings {
 		if err := viper.BindEnv(key, env); err != nil {
 			return fmt.Errorf("binding env %s: %w", key, err)
 		}
+	}
+
+	// Bind logging settings
+	if err := viper.BindEnv("logging.level", "OSMCP_LOGGING_LEVEL"); err != nil {
+		return fmt.Errorf("binding logging.level: %w", err)
 	}
 
 	// Set defaults using viper

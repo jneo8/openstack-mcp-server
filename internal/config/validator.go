@@ -131,16 +131,16 @@ func (c *Config) validateMCP() []ValidationError {
 	var errors []ValidationError
 
 	// Validate transport type
-	validTransports := map[string]bool{"stdio": true, "http-streaming": true}
+	validTransports := map[string]bool{"stdio": true, "http": true}
 	if !validTransports[c.MCP.Transport.Type] {
 		errors = append(errors, ValidationError{
 			Field:   "mcp.transport.type",
-			Message: "must be either 'stdio' or 'http-streaming'",
+			Message: "must be either 'stdio' or 'http'",
 		})
 	}
 
-	// HTTP streaming-specific validation
-	if c.MCP.Transport.Type == "http-streaming" {
+	// HTTP-specific validation
+	if c.MCP.Transport.Type == "http" {
 		if c.MCP.Transport.Port <= 0 || c.MCP.Transport.Port > 65535 {
 			errors = append(errors, ValidationError{
 				Field:   "mcp.transport.port",
@@ -151,7 +151,7 @@ func (c *Config) validateMCP() []ValidationError {
 		if c.MCP.Transport.Host == "" {
 			errors = append(errors, ValidationError{
 				Field:   "mcp.transport.host",
-				Message: "host is required for http-streaming transport",
+				Message: "host is required for http transport",
 			})
 		}
 	}

@@ -19,15 +19,15 @@ func newServeCommand() *cobra.Command {
 		Short: "Start the MCP server",
 		Long: `Start the OpenStack MCP server and begin listening for MCP client connections.
 
-The server will use the configured transport (stdio or http-streaming) to communicate
+The server will use the configured transport (stdio or http) to communicate
 with MCP clients and provide access to OpenStack resources, tools, and prompts.`,
 		RunE: runServe,
 	}
 
 	// Serve-specific flags
-	cmd.Flags().String("transport", "stdio", "transport type (stdio, http-streaming)")
-	cmd.Flags().Int("port", 8080, "port for http-streaming transport")
-	cmd.Flags().String("host", "localhost", "host for http-streaming transport")
+	cmd.Flags().String("transport", "stdio", "transport type (stdio, http)")
+	cmd.Flags().Int("port", 8080, "port for http transport")
+	cmd.Flags().String("host", "localhost", "host for http transport")
 	cmd.Flags().Duration("transport-timeout", 30*time.Second, "transport timeout")
 
 	// OpenStack auth flags (can override config file)

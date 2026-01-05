@@ -52,9 +52,9 @@ type MCPConfig struct {
 
 // TransportConfig defines how MCP communicates
 type TransportConfig struct {
-	Type string `mapstructure:"type"` // "stdio" or "http-streaming"
+	Type string `mapstructure:"type"` // "stdio" or "http"
 
-	// HTTP streaming-specific settings
+	// HTTP-specific settings
 	Port int    `mapstructure:"port"`
 	Host string `mapstructure:"host"`
 
