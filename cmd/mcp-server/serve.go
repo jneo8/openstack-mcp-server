@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/jneo8/openstack-mcp-server/internal/app"
@@ -47,26 +48,32 @@ with MCP clients and provide access to OpenStack resources, tools, and prompts.`
 	cmd.Flags().Bool("read-only", false, "run in read-only mode (disable tools)")
 
 	// Bind flags to viper
-	viper.BindPFlag("mcp.transport.type", cmd.Flags().Lookup("transport"))
-	viper.BindPFlag("mcp.transport.port", cmd.Flags().Lookup("port"))
-	viper.BindPFlag("mcp.transport.host", cmd.Flags().Lookup("host"))
-	viper.BindPFlag("mcp.transport.timeout", cmd.Flags().Lookup("transport-timeout"))
-
-	viper.BindPFlag("openstack.auth_url", cmd.Flags().Lookup("os-auth-url"))
-	viper.BindPFlag("openstack.username", cmd.Flags().Lookup("os-username"))
-	viper.BindPFlag("openstack.password", cmd.Flags().Lookup("os-password"))
-	viper.BindPFlag("openstack.project_name", cmd.Flags().Lookup("os-project-name"))
-	viper.BindPFlag("openstack.project_id", cmd.Flags().Lookup("os-project-id"))
-	viper.BindPFlag("openstack.region", cmd.Flags().Lookup("os-region"))
-	viper.BindPFlag("openstack.endpoint_type", cmd.Flags().Lookup("os-endpoint-type"))
-	viper.BindPFlag("openstack.user_domain_name", cmd.Flags().Lookup("os-user-domain"))
-	viper.BindPFlag("openstack.project_domain_name", cmd.Flags().Lookup("os-project-domain"))
-	viper.BindPFlag("openstack.verify_ssl", cmd.Flags().Lookup("os-verify-ssl"))
-	viper.BindPFlag("openstack.ca_cert_file", cmd.Flags().Lookup("os-cacert"))
-	viper.BindPFlag("openstack.timeout", cmd.Flags().Lookup("os-timeout"))
-	viper.BindPFlag("openstack.max_retries", cmd.Flags().Lookup("os-max-retries"))
-
-	viper.BindPFlag("mcp.read_only", cmd.Flags().Lookup("read-only"))
+	flagBindings := map[string]string{
+		"mcp.transport.type":            "transport",
+		"mcp.transport.port":            "port",
+		"mcp.transport.host":            "host",
+		"mcp.transport.timeout":         "transport-timeout",
+		"openstack.auth_url":            "os-auth-url",
+		"openstack.username":            "os-username",
+		"openstack.password":            "os-password",
+		"openstack.project_name":        "os-project-name",
+		"openstack.project_id":          "os-project-id",
+		"openstack.region":              "os-region",
+		"openstack.endpoint_type":       "os-endpoint-type",
+		"openstack.user_domain_name":    "os-user-domain",
+		"openstack.project_domain_name": "os-project-domain",
+		"openstack.verify_ssl":          "os-verify-ssl",
+		"openstack.ca_cert_file":        "os-cacert",
+		"openstack.timeout":             "os-timeout",
+		"openstack.max_retries":         "os-max-retries",
+		"mcp.read_only":                 "read-only",
+	}
+	for key, flag := range flagBindings {
+		if err := viper.BindPFlag(key, cmd.Flags().Lookup(flag)); err != nil {
+			fmt.Fprintf(os.Stderr, "Error binding flag %s: %v\n", flag, err)
+			os.Exit(1)
+		}
+	}
 
 	return cmd
 }

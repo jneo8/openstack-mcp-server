@@ -48,7 +48,10 @@ to interact with OpenStack resources through a standardized interface.`,
 	cmd.PersistentFlags().String("log-level", "info", "log level (debug, info, warn, error)")
 
 	// Bind persistent flags to viper
-	viper.BindPFlag("logging.level", cmd.PersistentFlags().Lookup("log-level"))
+	if err := viper.BindPFlag("logging.level", cmd.PersistentFlags().Lookup("log-level")); err != nil {
+		fmt.Fprintf(os.Stderr, "Error binding log-level flag: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Add subcommands
 	cmd.AddCommand(newServeCommand())
@@ -64,9 +67,9 @@ func initConfig() error {
 	viper.SetConfigType("yaml")
 
 	// Add config search paths
-	viper.AddConfigPath(".")                            // Current directory
+	viper.AddConfigPath(".") // Current directory
 	if home, err := os.UserHomeDir(); err == nil {
-		viper.AddConfigPath(home)                       // Home directory
+		viper.AddConfigPath(home)                            // Home directory
 		viper.AddConfigPath(fmt.Sprintf("%s/.config", home)) // XDG config
 	}
 	viper.AddConfigPath("/etc/openstack-mcp-server") // System-wide config
@@ -77,16 +80,23 @@ func initConfig() error {
 	viper.AutomaticEnv()
 
 	// Manually bind OpenStack environment variables (OS_ prefix is standard)
-	viper.BindEnv("openstack.auth_url", "OS_AUTH_URL")
-	viper.BindEnv("openstack.username", "OS_USERNAME")
-	viper.BindEnv("openstack.password", "OS_PASSWORD")
-	viper.BindEnv("openstack.project_name", "OS_PROJECT_NAME")
-	viper.BindEnv("openstack.project_id", "OS_PROJECT_ID")
-	viper.BindEnv("openstack.project_domain_name", "OS_PROJECT_DOMAIN_NAME")
-	viper.BindEnv("openstack.user_domain_name", "OS_USER_DOMAIN_NAME")
-	viper.BindEnv("openstack.region", "OS_REGION_NAME")
-	viper.BindEnv("openstack.endpoint_type", "OS_ENDPOINT_TYPE")
-	viper.BindEnv("openstack.ca_cert_file", "OS_CACERT")
+	envBindings := map[string]string{
+		"openstack.auth_url":            "OS_AUTH_URL",
+		"openstack.username":            "OS_USERNAME",
+		"openstack.password":            "OS_PASSWORD",
+		"openstack.project_name":        "OS_PROJECT_NAME",
+		"openstack.project_id":          "OS_PROJECT_ID",
+		"openstack.project_domain_name": "OS_PROJECT_DOMAIN_NAME",
+		"openstack.user_domain_name":    "OS_USER_DOMAIN_NAME",
+		"openstack.region":              "OS_REGION_NAME",
+		"openstack.endpoint_type":       "OS_ENDPOINT_TYPE",
+		"openstack.ca_cert_file":        "OS_CACERT",
+	}
+	for key, env := range envBindings {
+		if err := viper.BindEnv(key, env); err != nil {
+			return fmt.Errorf("binding env %s: %w", key, err)
+		}
+	}
 
 	// Set defaults using viper
 	setDefaults()
