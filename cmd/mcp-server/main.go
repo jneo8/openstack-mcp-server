@@ -92,9 +92,9 @@ func initConfig() error {
 		"openstack.region":              {"OS_REGION_NAME", "OSMCP_OS_REGION_NAME"},
 		"openstack.endpoint_type":       {"OS_ENDPOINT_TYPE", "OSMCP_OS_ENDPOINT_TYPE"},
 		"openstack.ca_cert_file":        {"OS_CACERT", "OSMCP_OS_CACERT"},
-		"openstack.verify_ssl":          {"OSMCP_OS_VERIFY_SSL"},
-		"openstack.timeout":             {"OSMCP_OS_TIMEOUT"},
-		"openstack.max_retries":         {"OSMCP_OS_MAX_RETRIES"},
+		"openstack.verify_ssl":          {"OS_VERIFY_SSL", "OSMCP_OS_VERIFY_SSL"},
+		"openstack.timeout":             {"OS_TIMEOUT", "OSMCP_OS_TIMEOUT"},
+		"openstack.max_retries":         {"OS_MAX_RETRIES", "OSMCP_OS_MAX_RETRIES"},
 	}
 	for key, envVars := range envBindings {
 		// viper.BindEnv takes key as first arg, then env var names

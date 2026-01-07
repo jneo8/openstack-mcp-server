@@ -60,6 +60,59 @@ pre-commit: check  ## Run pre-commit checks
 
 .PHONY: check pre-commit
 
+##@ Build
+
+VERSION ?= dev
+COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+LDFLAGS := -s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.buildDate=$(BUILD_DATE)
+
+build:  ## Build the binary
+	@mkdir -p $(BUILD_DIR)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+		-ldflags="$(LDFLAGS)" \
+		-a -installsuffix cgo \
+		-o $(BUILD_DIR)/$(BINARY_NAME) \
+		$(CMD_DIR)
+
+build-local:  ## Build the binary for local OS
+	@mkdir -p $(BUILD_DIR)
+	go build \
+		-ldflags="$(LDFLAGS)" \
+		-o $(BUILD_DIR)/$(BINARY_NAME) \
+		$(CMD_DIR)
+
+clean:  ## Clean build artifacts
+	rm -rf $(BUILD_DIR)
+
+.PHONY: build build-local clean
+
+##@ Docker
+
+DOCKER_REGISTRY ?= ghcr.io
+DOCKER_REPO ?= jneo8/openstack-mcp-server
+DOCKER_TAG ?= $(VERSION)
+DOCKER_IMAGE := $(DOCKER_REGISTRY)/$(DOCKER_REPO):$(DOCKER_TAG)
+
+docker-build:  ## Build Docker image
+	docker build \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg COMMIT=$(COMMIT) \
+		--build-arg BUILD_DATE=$(BUILD_DATE) \
+		-t $(DOCKER_IMAGE) \
+		.
+
+docker-build-latest:  ## Build Docker image with latest tag
+	docker build \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg COMMIT=$(COMMIT) \
+		--build-arg BUILD_DATE=$(BUILD_DATE) \
+		-t $(DOCKER_REGISTRY)/$(DOCKER_REPO):latest \
+		-t $(DOCKER_IMAGE) \
+		.
+
+.PHONY: docker-build docker-build-latest
+
 ##@ Help
 
 .PHONY: help

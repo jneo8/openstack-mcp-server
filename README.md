@@ -57,6 +57,43 @@ go run ./cmd/mcp-server serve
 go run ./cmd/mcp-server serve --transport http --port 8080
 ```
 
+## Docker
+
+### Building the Docker Image
+
+The project includes a multi-stage Dockerfile that creates a minimal, secure container image using Google's distroless base.
+
+```bash
+# Build with default tags
+make docker-build
+
+# Build with custom version
+make docker-build VERSION=0.1.0
+
+# Build with latest tag
+make docker-build-latest
+```
+
+### Running with Docker
+
+Run the container with your OpenStack credentials:
+
+```bash
+# Using environment variables
+docker run -d \
+  --name openstack-mcp-server \
+  -p 8080:8080 \
+  -e OS_AUTH_URL=https://your-openstack.example.com:5000/v3 \
+  -e OS_USERNAME=your-username \
+  -e OS_PASSWORD=your-password \
+  -e OS_PROJECT_NAME=your-project \
+  -e OS_USER_DOMAIN_NAME=Default \
+  -e OS_PROJECT_DOMAIN_NAME=Default \
+  -e OS_REGION_NAME=RegionOne \
+  -e OS_VERIFY_SSL=false \
+  ghcr.io/jneo8/openstack-mcp-server:latest
+```
+
 ## Testing with MCP Inspector
 
 The [MCP Inspector](https://github.com/modelcontextprotocol/inspector) is a great tool for testing and debugging your MCP server.
