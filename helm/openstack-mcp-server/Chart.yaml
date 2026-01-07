@@ -1,0 +1,18 @@
+apiVersion: v2
+name: openstack-mcp-server
+description: A Helm chart for OpenStack MCP Server - Model Context Protocol server for OpenStack infrastructure
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: ">=1.23.0-0"
+keywords:
+  - openstack
+  - mcp
+  - model-context-protocol
+  - ai
+home: https://github.com/jneo8/openstack-mcp-server
+sources:
+  - https://github.com/jneo8/openstack-mcp-server
+maintainers:
+  - name: jneo8
+    url: https://github.com/jneo8

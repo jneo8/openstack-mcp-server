@@ -1,0 +1,17 @@
+OpenStack MCP Server has been deployed!
+
+To check the status:
+  kubectl get pods -l "app.kubernetes.io/name={{ include "openstack-mcp-server.name" . }}"
+
+To view logs:
+  kubectl logs -l "app.kubernetes.io/name={{ include "openstack-mcp-server.name" . }}" -f
+
+To access the server (port-forward):
+  kubectl port-forward svc/{{ include "openstack-mcp-server.fullname" . }} 8080:8080
+
+{{- if not .Values.secrets.useExistingSecret }}
+
+WARNING: Using inline secrets. For production, create a secret and set:
+  --set secrets.useExistingSecret=true
+  --set secrets.existingSecretName=<your-secret>
+{{- end }}

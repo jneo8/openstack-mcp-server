@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "openstack-mcp-server.fullname" . }}
+  labels:
+    {{- include "openstack-mcp-server.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "openstack-mcp-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+      labels:
+        {{- include "openstack-mcp-server.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command:
+        - /bin/mcp-server
+        args:
+        - serve
+        - --transport
+        - http
+        - --host
+        - "0.0.0.0"
+        - --port
+        - "8080"
+        env:
+        - name: OS_AUTH_URL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "openstack-mcp-server.fullname" . }}
+              key: OS_AUTH_URL
+        - name: OS_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "openstack-mcp-server.fullname" . }}
+              key: OS_USERNAME
+        - name: OS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "openstack-mcp-server.secretName" . }}
+              key: password
+        - name: OS_PROJECT_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "openstack-mcp-server.fullname" . }}
+              key: OS_PROJECT_NAME
+        - name: OS_REGION_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "openstack-mcp-server.fullname" . }}
+              key: OS_REGION_NAME
+        - name: OS_USER_DOMAIN_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "openstack-mcp-server.fullname" . }}
+              key: OS_USER_DOMAIN_NAME
+        - name: OS_PROJECT_DOMAIN_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "openstack-mcp-server.fullname" . }}
+              key: OS_PROJECT_DOMAIN_NAME
+        - name: OSMCP_OS_VERIFY_SSL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "openstack-mcp-server.fullname" . }}
+              key: OSMCP_OS_VERIFY_SSL
+        - name: OSMCP_LOGGING_LEVEL
+          value: {{ .Values.logLevel | quote }}
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        livenessProbe:
+          {{- toYaml .Values.livenessProbe | nindent 10 }}
+        readinessProbe:
+          {{- toYaml .Values.readinessProbe | nindent 10 }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65532
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}

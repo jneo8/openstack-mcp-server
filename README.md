@@ -94,6 +94,29 @@ docker run -d \
   ghcr.io/jneo8/openstack-mcp-server:latest
 ```
 
+## Kubernetes/Helm
+
+Deploy to Kubernetes using Helm:
+
+```bash
+# Create secret for OpenStack password
+kubectl create secret generic openstack-credentials \
+  --from-literal=password='your-password'
+
+# Install with Helm
+helm install my-mcp-server ./helm/openstack-mcp-server \
+  --set openstack.authUrl="https://your-openstack.example.com:5000/v3" \
+  --set openstack.username="your-username" \
+  --set openstack.projectName="your-project" \
+  --set secrets.useExistingSecret=true \
+  --set secrets.existingSecretName="openstack-credentials"
+
+# Access via port-forward
+kubectl port-forward svc/my-mcp-server-openstack-mcp-server 8080:8080
+```
+
+See the [Helm chart README](helm/openstack-mcp-server/README.md) for detailed configuration options.
+
 ## Testing with MCP Inspector
 
 The [MCP Inspector](https://github.com/modelcontextprotocol/inspector) is a great tool for testing and debugging your MCP server.
