@@ -67,3 +67,12 @@ secrets:
 
 # Logging level (debug, info, warn, error)
 logLevel: "info"
+
+# Node selector for pod scheduling
+nodeSelector: {}
+
+# Tolerations for pod scheduling
+tolerations: []
+
+# Affinity rules for pod scheduling
+affinity: {}
